@@ -9,7 +9,7 @@ To check whether one of the supported mapping apps is present on the user's devi
     
 Then, to launch into directions in that app:
 
-    CLLocationCoordinate2D bigBen = CLCLLocationCoordinate2DMake(51.500755, -0.124626);
+    CLLocationCoordinate2D bigBen = CLLocationCoordinate2DMake(51.500755, -0.124626);
     [CMMapLauncher launchMapApp:CMMapAppCitymapper
                 forDirectionsTo:[CMMapPoint mapPointWithName:@"Big Ben"
                                                   coordinate:bigBen]];
