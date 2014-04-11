@@ -49,6 +49,9 @@
         case CMMapAppWaze:
             return @"waze://";
             
+        case CMMapAppYandex:
+            return @"yandexnavi://";
+            
         default:
             return nil;
     }
@@ -170,6 +173,14 @@
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     } else if (mapApp == CMMapAppWaze) {
         NSString *url = [NSString stringWithFormat:@"waze://?ll=%f,%f&navigate=yes", end.coordinate.latitude, end.coordinate.longitude];
+        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+    } else if (mapApp == CMMapAppYandex) {
+        NSString *url = nil;
+        if(start.isCurrentLocation) {
+            url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f", end.coordinate.latitude, end.coordinate.longitude];
+        } else {
+            url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f&lat_from=%f&lon_from=%f", end.coordinate.latitude, end.coordinate.longitude, start.coordinate.latitude, start.coordinate.longitude];
+        }
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     }
     
