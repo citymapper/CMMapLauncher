@@ -50,6 +50,7 @@ typedef enum {
     CMMapAppNavigon,        // Navigon
     CMMapAppTheTransitApp,  // The Transit App
     CMMapAppWaze,           // Waze
+    CMMapAppYandex          // Yandex Maps
 } CMMapApp;
 
 @interface CMMapLauncher : NSObject
