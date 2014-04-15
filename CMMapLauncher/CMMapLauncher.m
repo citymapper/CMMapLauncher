@@ -176,7 +176,7 @@
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     } else if (mapApp == CMMapAppYandex) {
         NSString *url = nil;
-        if(start.isCurrentLocation) {
+        if (start.isCurrentLocation) {
             url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f", end.coordinate.latitude, end.coordinate.longitude];
         } else {
             url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f&lat_from=%f&lon_from=%f", end.coordinate.latitude, end.coordinate.longitude, start.coordinate.latitude, start.coordinate.longitude];

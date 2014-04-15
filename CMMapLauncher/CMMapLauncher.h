@@ -43,15 +43,15 @@
 
 // This enumeration identifies the mapping apps
 // that this launcher knows how to support.
-typedef enum {
+typedef NS_ENUM(NSUInteger, CMMapApp) {
     CMMapAppAppleMaps = 0,  // Preinstalled Apple Maps
     CMMapAppCitymapper,     // Citymapper
     CMMapAppGoogleMaps,     // Standalone Google Maps App
     CMMapAppNavigon,        // Navigon
     CMMapAppTheTransitApp,  // The Transit App
     CMMapAppWaze,           // Waze
-    CMMapAppYandex          // Yandex Maps
-} CMMapApp;
+    CMMapAppYandex,         // Yandex Navigator
+};
 
 @interface CMMapLauncher : NSObject
 
