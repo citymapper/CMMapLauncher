@@ -79,7 +79,7 @@
     }
     
     if (mapPoint.name) {
-        return [NSString stringWithFormat:@"%f,%f+(%@)", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude, [CMMapLauncher urlEncode:mapPoint.name]];
+        return [NSString stringWithFormat:@"%f,%f", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude];
     }
     
     return [NSString stringWithFormat:@"%f,%f", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude];
