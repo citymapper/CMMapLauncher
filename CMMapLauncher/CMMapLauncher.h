@@ -51,15 +51,16 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
     CMMapAppTheTransitApp,  // The Transit App
     CMMapAppWaze,           // Waze
     CMMapAppYandex,         // Yandex Navigator
+    CMMapAppUber,           // Uber
 };
 
 @interface CMMapLauncher : NSObject
 
 /**
  Determines whether the given mapping app is installed.
- 
+
  @param mapApp An enumeration value identifying a mapping application.
- 
+
  @return YES if the specified app is installed, NO otherwise.
  */
 + (BOOL)isMapAppInstalled:(CMMapApp)mapApp;
@@ -67,10 +68,10 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
 /**
  Launches the specified mapping application with directions
  from the user's current location to the specified endpoint.
- 
+
  @param mapApp An enumeration value identifying a mapping application.
  @param end The destination of the desired directions.
- 
+
  @return YES if the mapping app could be launched, NO otherwise.
  */
 + (BOOL)launchMapApp:(CMMapApp)mapApp
@@ -79,11 +80,11 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
 /**
  Launches the specified mapping application with directions
  between the two specified endpoints.
- 
+
  @param mapApp An enumeration value identifying a mapping application.
  @param start The starting point of the desired directions.
  @param end The destination of the desired directions.
- 
+
  @return YES if the mapping app could be launched, NO otherwise.
  */
 + (BOOL)launchMapApp:(CMMapApp)mapApp
@@ -131,14 +132,14 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
 
 /**
  Creates a new CMMapPoint with the given geographical coordinate.
- 
+
  @param coordinate The geographical coordinate of the new map point.
  */
 + (CMMapPoint *)mapPointWithCoordinate:(CLLocationCoordinate2D)coordinate;
 
 /**
  Creates a new CMMapPoint with the given name and coordinate.
- 
+
  @param name The user-visible name of the new map point.
  @param coordinate The geographical coordinate of the new map point.
  */
@@ -147,7 +148,7 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
 
 /**
  Creates a new CMMapPoint with the given name, address, and coordinate.
- 
+
  @param name The user-visible name of the new map point.
  @param address The address string of the new map point.
  @param coordinate The geographical coordinate of the new map point.
@@ -158,7 +159,7 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
 
 /**
  Creates a new CMMapPoint with the given name, address, and coordinate.
- 
+
  @param address The address string of the new map point.
  @param coordinate The geographical coordinate of the new map point.
  */
