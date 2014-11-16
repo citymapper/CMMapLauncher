@@ -188,10 +188,11 @@
     } else if (mapApp == CMMapAppUber) {
         NSString *url = nil;
         if (start.isCurrentLocation) {
-            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup=my_location&dropoff[latitude]=%f&dropoff[longitude]=%f", end.coordinate.latitude, end.coordinate.longitude];
+            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup=my_location&dropoff[latitude]=%f&dropoff[longitude]=%f&dropoff[nickname]=%@", end.coordinate.latitude, end.coordinate.longitude, [end.name stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         } else {
-            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup[latitude]=%f&pickup[longitude]=%f&dropoff[latitude]=%f&dropoff[longitude]=%f", start.coordinate.latitude, start.coordinate.longitude, end.coordinate.latitude, end.coordinate.longitude];
+            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup[latitude]=%f&pickup[longitude]=%f&dropoff[latitude]=%f&dropoff[longitude]=%f&dropoff[nickname]=%@", start.coordinate.latitude, start.coordinate.longitude, end.coordinate.latitude, end.coordinate.longitude, [end.name stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         }
+        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     }
     return NO;
 }
