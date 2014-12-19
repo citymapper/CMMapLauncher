@@ -52,6 +52,9 @@
         case CMMapAppYandex:
             return @"yandexnavi://";
             
+        case CMMapAppTomTom:
+            return @"tomtomhome://";
+
         default:
             return nil;
     }
@@ -181,6 +184,10 @@
         } else {
             url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f&lat_from=%f&lon_from=%f", end.coordinate.latitude, end.coordinate.longitude, start.coordinate.latitude, start.coordinate.longitude];
         }
+        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+    } else if (mapApp == CMMapAppTomTom) {
+        NSString *url = nil;
+        url = [NSString stringWithFormat:@"tomtomhome:geo:action=navigateto&lat=%f&long=%f&name=%@", end.coordinate.latitude, end.coordinate.longitude, [end.name stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     }
     
