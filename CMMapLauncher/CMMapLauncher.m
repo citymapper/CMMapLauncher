@@ -36,22 +36,25 @@
     switch (mapApp) {
         case CMMapAppCitymapper:
             return @"citymapper://";
-            
+
         case CMMapAppGoogleMaps:
             return @"comgooglemaps://";
-            
+
         case CMMapAppNavigon:
             return @"navigon://";
-            
+
         case CMMapAppTheTransitApp:
             return @"transit://";
-            
+
         case CMMapAppWaze:
             return @"waze://";
-            
+
         case CMMapAppYandex:
             return @"yandexnavi://";
-            
+
+        case CMMapAppUber:
+            return @"uber://";
+
         default:
             return nil;
     }
@@ -61,11 +64,11 @@
     // Encode all the reserved characters, per RFC 3986
     // (<http://www.ietf.org/rfc/rfc3986.txt>)
     NSString *newString = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)queryParam, NULL, (CFStringRef)@"!*'();:@&=+$,/?%#[]", kCFStringEncodingUTF8);
-    
+
     if (newString) {
         return newString;
     }
-    
+
     return @"";
 }
 
@@ -73,15 +76,15 @@
     if (!mapPoint) {
         return @"";
     }
-    
+
     if (mapPoint.isCurrentLocation && mapPoint.coordinate.latitude == 0.0 && mapPoint.coordinate.longitude == 0.0) {
         return @"";
     }
-    
+
     if (mapPoint.name) {
-        return [NSString stringWithFormat:@"%f,%f+(%@)", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude, [CMMapLauncher urlEncode:mapPoint.name]];
+        return [NSString stringWithFormat:@"%f,%f", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude];
     }
-    
+
     return [NSString stringWithFormat:@"%f,%f", mapPoint.coordinate.latitude, mapPoint.coordinate.longitude];
 }
 
@@ -89,12 +92,12 @@
     if (mapApp == CMMapAppAppleMaps) {
         return YES;
     }
-    
+
     NSString *urlPrefix = [CMMapLauncher urlPrefixForMapApp:mapApp];
     if (!urlPrefix) {
         return NO;
     }
-    
+
     return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:urlPrefix]];
 }
 
@@ -108,12 +111,12 @@
     if (![CMMapLauncher isMapAppInstalled:mapApp]) {
         return NO;
     }
-    
+
     if (mapApp == CMMapAppAppleMaps) {
         // Check for iOS 6
         Class mapItemClass = [MKMapItem class];
         if (mapItemClass && [mapItemClass respondsToSelector:@selector(openMapsWithItems:launchOptions:)]) {
-            NSDictionary *launchOptions = @{MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving};
+            NSDictionary *launchOptions = @{MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeWalking};
             return [MKMapItem openMapsWithItems:@[start.MKMapItem, end.MKMapItem] launchOptions:launchOptions];
         } else {  // iOS 5
             NSString *url = [NSString stringWithFormat:@"http://maps.google.com/maps?saddr=%@&daddr=%@",
@@ -152,7 +155,7 @@
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     } else if (mapApp == CMMapAppTheTransitApp) {
         // http://thetransitapp.com/developers
-        
+
         NSMutableArray *params = [NSMutableArray arrayWithCapacity:2];
         if (start && !start.isCurrentLocation) {
             [params addObject:[NSString stringWithFormat:@"from=%f,%f", start.coordinate.latitude, start.coordinate.longitude]];
@@ -164,7 +167,7 @@
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     } else if (mapApp == CMMapAppNavigon) {
         // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
-        
+
         NSString *name = @"Destination";  // Doc doesn't say whether name can be omitted
         if (end.name) {
             name = end.name;
@@ -182,8 +185,15 @@
             url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f&lat_from=%f&lon_from=%f", end.coordinate.latitude, end.coordinate.longitude, start.coordinate.latitude, start.coordinate.longitude];
         }
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+    } else if (mapApp == CMMapAppUber) {
+        NSString *url = nil;
+        if (start.isCurrentLocation) {
+            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup=my_location&dropoff[latitude]=%f&dropoff[longitude]=%f&dropoff[nickname]=%@", end.coordinate.latitude, end.coordinate.longitude, [end.name stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        } else {
+            url = [NSString stringWithFormat:@"uber://?action=setPickup&pickup[latitude]=%f&pickup[longitude]=%f&dropoff[latitude]=%f&dropoff[longitude]=%f&dropoff[nickname]=%@", start.coordinate.latitude, start.coordinate.longitude, end.coordinate.latitude, end.coordinate.longitude, [end.name stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        }
+        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
     }
-    
     return NO;
 }
 
@@ -237,7 +247,7 @@
     if (_isCurrentLocation) {
         return @"Current Location";
     }
-    
+
     return _name;
 }
 
@@ -245,9 +255,9 @@
     if (_isCurrentLocation) {
         return [MKMapItem mapItemForCurrentLocation];
     }
-    
+
     MKPlacemark *placemark = [[MKPlacemark alloc] initWithCoordinate:_coordinate addressDictionary:nil];
-    
+
     MKMapItem *item = [[MKMapItem alloc] initWithPlacemark:placemark];
     item.name = self.name;
     return item;
