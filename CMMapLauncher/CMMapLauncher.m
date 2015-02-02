@@ -89,7 +89,7 @@
 }
 
 + (BOOL)isMapAppInstalled:(CMMapApp)mapApp {
-    if (mapApp == CMMapAppAppleMaps || mapApp == CMMapAppUber) {
+    if (mapApp == CMMapAppAppleMaps) {
         return YES;
     }
 
