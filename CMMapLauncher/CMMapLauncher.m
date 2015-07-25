@@ -22,15 +22,35 @@
 
 #import "CMMapLauncher.h"
 
-@interface CMMapLauncher ()
+@interface CMMapLauncher () <UIAlertViewDelegate>
 
 + (NSString *)urlPrefixForMapApp:(CMMapApp)mapApp;
 + (NSString *)urlEncode:(NSString *)queryParam;
 + (NSString *)googleMapsStringForMapPoint:(CMMapPoint *)mapPoint;
 
+@property (nonatomic, strong) CMMapPoint *start, *end;
 @end
 
 @implementation CMMapLauncher
+
++ (CMMapLauncher *)alertViewWatcherFor:(CMMapPoint *)start to:(CMMapPoint *)end
+{
+    static CMMapLauncher *sAlertViewWatcher = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sAlertViewWatcher = [[CMMapLauncher alloc] init];
+    });
+    sAlertViewWatcher.start = start;
+    sAlertViewWatcher.end = end;
+    return sAlertViewWatcher;
+}
+
+- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
+    if(buttonIndex == alertView.cancelButtonIndex) return;
+    NSString *name = [alertView buttonTitleAtIndex:buttonIndex];
+    CMMapApp app = [CMMapLauncher mapAppForName:name];
+    [CMMapLauncher launchMapApp:app forDirectionsFrom:self.start to:self.end];
+}
 
 + (NSString *)urlPrefixForMapApp:(CMMapApp)mapApp {
     switch (mapApp) {
@@ -55,6 +75,39 @@
         default:
             return nil;
     }
+}
+
+// Nicer ways to do this in swift :)
++ (NSString *)nameForMapApp:(CMMapApp)mapApp {
+    switch (mapApp) {
+        case CMMapAppCitymapper:
+            return @"City Mapper";
+        case CMMapAppGoogleMaps:
+            return @"Google Maps";
+        case CMMapAppAppleMaps:
+            return @"Apple Maps";
+        case CMMapAppUserPick:
+            return nil;
+        case CMMapAppNavigon:
+            return @"Navigon";
+        case CMMapAppTheTransitApp:
+            return @"The Transit App";
+        case CMMapAppWaze:
+            return @"Waze";
+        case CMMapAppYandex:
+            return @"Yandex";
+    }
+}
+
++ (CMMapApp)mapAppForName:(NSString *)name {
+    if([name isEqualToString:@"City Mapper"]) return CMMapAppCitymapper;
+    if([name isEqualToString:@"Google Maps"]) return CMMapAppGoogleMaps;
+    if([name isEqualToString:@"Apple Maps"]) return CMMapAppAppleMaps;
+    if([name isEqualToString:@"Navigon"]) return CMMapAppNavigon;
+    if([name isEqualToString:@"The Transit App"]) return CMMapAppTheTransitApp;
+    if([name isEqualToString:@"Waze"]) return CMMapAppWaze;
+    if([name isEqualToString:@"Yandex"]) return CMMapAppYandex;
+    return CMMapAppUserPick;
 }
 
 + (NSString *)urlEncode:(NSString *)queryParam {
@@ -86,7 +139,7 @@
 }
 
 + (BOOL)isMapAppInstalled:(CMMapApp)mapApp {
-    if (mapApp == CMMapAppAppleMaps) {
+    if (mapApp == CMMapAppAppleMaps || mapApp == CMMapAppUserPick) {
         return YES;
     }
     
@@ -107,6 +160,27 @@
                   to:(CMMapPoint *)end {
     if (![CMMapLauncher isMapAppInstalled:mapApp]) {
         return NO;
+    }
+    
+    if (mapApp == CMMapAppUserPick) {
+        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Open with:"
+                                                              message:nil
+                                                             delegate:[self alertViewWatcherFor:start to:end]
+                                                    cancelButtonTitle:nil
+                                                    otherButtonTitles:nil];
+        for (NSUInteger x = 0; x < CMMapAppUserPick; x++) {
+            if([self isMapAppInstalled:x]) {
+                [alertView addButtonWithTitle:[self nameForMapApp:x]];
+                mapApp = x;
+            }
+        }
+        if(alertView.numberOfButtons > 1) {
+            // There is a choice.
+            [alertView addButtonWithTitle:@"Cancel"];
+            alertView.cancelButtonIndex = alertView.numberOfButtons-1;
+            [alertView show];
+            return YES;
+        }
     }
     
     if (mapApp == CMMapAppAppleMaps) {

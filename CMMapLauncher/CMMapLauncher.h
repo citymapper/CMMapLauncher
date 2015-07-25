@@ -51,6 +51,7 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
     CMMapAppTheTransitApp,  // The Transit App
     CMMapAppWaze,           // Waze
     CMMapAppYandex,         // Yandex Navigator
+    CMMapAppUserPick        // User can pick from a list of available applications.  Needs to be last enum option.
 };
 
 @interface CMMapLauncher : NSObject
