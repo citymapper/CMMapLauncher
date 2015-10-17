@@ -48,7 +48,10 @@
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
     if(buttonIndex == alertView.cancelButtonIndex) return;
     NSString *name = [alertView buttonTitleAtIndex:buttonIndex];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CMMapApp app = [CMMapLauncher mapAppForName:name];
+    [defaults setObject:@(app) forKey:@"CMMapAppUserPick"];
+    [defaults synchronize];
     [CMMapLauncher launchMapApp:app forDirectionsFrom:self.start to:self.end];
 }
 
@@ -139,6 +142,14 @@
 }
 
 + (BOOL)isMapAppInstalled:(CMMapApp)mapApp {
+    BOOL canOpenDeprecated = ([[[UIDevice currentDevice] systemVersion] compare:@"9.0" options:NSNumericSearch] != NSOrderedAscending);
+    
+    if(canOpenDeprecated)
+    {
+        // iOS 9.0 deprecated canOpenURL, so we have no way to guess.  This means we just have to assume yes.
+        return YES;
+    }
+    
     if (mapApp == CMMapAppAppleMaps || mapApp == CMMapAppUserPick) {
         return YES;
     }
@@ -155,31 +166,47 @@
     return [CMMapLauncher launchMapApp:mapApp forDirectionsFrom:[CMMapPoint currentLocation] to:end];
 }
 
++ (void)clearDefaultMapApp {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if([defaults objectForKey:@"CMMapAppUserPick"]) {
+        [defaults removeObjectForKey:@"CMMapAppUserPick"];
+        [defaults synchronize];
+    }
+}
+
 + (BOOL)launchMapApp:(CMMapApp)mapApp
    forDirectionsFrom:(CMMapPoint *)start
                   to:(CMMapPoint *)end {
     if (![CMMapLauncher isMapAppInstalled:mapApp]) {
+        [self clearDefaultMapApp];
         return NO;
     }
     
     if (mapApp == CMMapAppUserPick) {
-        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Open with:"
-                                                              message:nil
-                                                             delegate:[self alertViewWatcherFor:start to:end]
-                                                    cancelButtonTitle:nil
-                                                    otherButtonTitles:nil];
-        for (NSUInteger x = 0; x < CMMapAppUserPick; x++) {
-            if([self isMapAppInstalled:x]) {
-                [alertView addButtonWithTitle:[self nameForMapApp:x]];
-                mapApp = x;
-            }
+        NSNumber *userPick = [[NSUserDefaults standardUserDefaults] objectForKey:@"CMMapAppUserPick"];
+        if([userPick isKindOfClass:[NSNumber class]]) {
+            mapApp = userPick.integerValue;
         }
-        if(alertView.numberOfButtons > 1) {
-            // There is a choice.
-            [alertView addButtonWithTitle:@"Cancel"];
-            alertView.cancelButtonIndex = alertView.numberOfButtons-1;
-            [alertView show];
-            return YES;
+        else
+        {
+            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Open with:"
+                                                                message:nil
+                                                               delegate:[self alertViewWatcherFor:start to:end]
+                                                      cancelButtonTitle:nil
+                                                      otherButtonTitles:nil];
+            for (NSUInteger x = 0; x < CMMapAppUserPick; x++) {
+                if([self isMapAppInstalled:x]) {
+                    [alertView addButtonWithTitle:[self nameForMapApp:x]];
+                    mapApp = x;
+                }
+            }
+            if(alertView.numberOfButtons > 1) {
+                // There is a choice.
+                [alertView addButtonWithTitle:@"Cancel"];
+                alertView.cancelButtonIndex = alertView.numberOfButtons-1;
+                [alertView show];
+                return YES;
+            }
         }
     }
     
@@ -201,7 +228,9 @@
                          [CMMapLauncher googleMapsStringForMapPoint:start],
                          [CMMapLauncher googleMapsStringForMapPoint:end]
                          ];
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     } else if (mapApp == CMMapAppCitymapper) {
         NSMutableArray *params = [NSMutableArray arrayWithCapacity:10];
         if (start && !start.isCurrentLocation) {
@@ -223,7 +252,9 @@
             }
         }
         NSString *url = [NSString stringWithFormat:@"citymapper://directions?%@", [params componentsJoinedByString:@"&"]];
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     } else if (mapApp == CMMapAppTheTransitApp) {
         // http://thetransitapp.com/developers
         
@@ -235,7 +266,9 @@
             [params addObject:[NSString stringWithFormat:@"to=%f,%f", end.coordinate.latitude, end.coordinate.longitude]];
         }
         NSString *url = [NSString stringWithFormat:@"transit://directions?%@", [params componentsJoinedByString:@"&"]];
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     } else if (mapApp == CMMapAppNavigon) {
         // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
         
@@ -244,10 +277,14 @@
             name = end.name;
         }
         NSString *url = [NSString stringWithFormat:@"navigon://coordinate/%@/%f/%f", [CMMapLauncher urlEncode:name], end.coordinate.longitude, end.coordinate.latitude];
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     } else if (mapApp == CMMapAppWaze) {
         NSString *url = [NSString stringWithFormat:@"waze://?ll=%f,%f&navigate=yes", end.coordinate.latitude, end.coordinate.longitude];
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     } else if (mapApp == CMMapAppYandex) {
         NSString *url = nil;
         if (start.isCurrentLocation) {
@@ -255,7 +292,9 @@
         } else {
             url = [NSString stringWithFormat:@"yandexnavi://build_route_on_map?lat_to=%f&lon_to=%f&lat_from=%f&lon_from=%f", end.coordinate.latitude, end.coordinate.longitude, start.coordinate.latitude, start.coordinate.longitude];
         }
-        return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        BOOL success = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+        if(!success) [self clearDefaultMapApp];
+        return success;
     }
     
     return NO;
