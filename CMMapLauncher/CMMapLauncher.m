@@ -45,7 +45,10 @@
             
         case CMMapAppTheTransitApp:
             return @"transit://";
-            
+        
+        case CMMapAppMoovit:
+            return @"moovit://";
+        
         case CMMapAppWaze:
             return @"waze://";
             
@@ -162,6 +165,28 @@
         }
         NSString *url = [NSString stringWithFormat:@"transit://directions?%@", [params componentsJoinedByString:@"&"]];
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+    } else if (mapApp == CMMapAppMoovit) {
+      // http://developers.moovitapp.com
+      
+      NSMutableArray *params = [NSMutableArray arrayWithCapacity:5];
+      
+      if (start && !.start.isCurrentLocation) {
+          [params addObject:[NSString stringWithFormat:@"origin_lat=%f&origin_lon=%f", start.coordinate.latitude, start.coordinate.longitude]];
+          if (start.name) {
+              [params addObject:[NSString stringWithFormat:@"orig_name=%@", [CMMapLauncher urlEncode:start.name]]];
+          }
+      }
+      
+      if (end && !end.isCurrentLocation) {
+          [params addObject:[NSString stringWithFormat:@"dest_lat=%f&dest_lon=%f", end.coordinate.latitude, end.coordinate.longitude]];
+          if (end.name) {
+              [params addObject:[NSString stringWithFormat:@"dest_name=%@", [CMMapLauncher urlEncode: end.name]]];
+          }
+      }
+      
+      NSString *url = [NSString stringWithFormat:@"moovit://directions?%@", [params componentsJoinedByString:@"&"]];
+      return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+      
     } else if (mapApp == CMMapAppNavigon) {
         // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
         

@@ -49,6 +49,7 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
     CMMapAppGoogleMaps,     // Standalone Google Maps App
     CMMapAppNavigon,        // Navigon
     CMMapAppTheTransitApp,  // The Transit App
+    CMMapAppMoovit,         // Moovit
     CMMapAppWaze,           // Waze
     CMMapAppYandex,         // Yandex Navigator
 };
