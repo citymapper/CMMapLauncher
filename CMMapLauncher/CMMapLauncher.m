@@ -168,7 +168,7 @@
     } else if (mapApp == CMMapAppMoovit) {
       // http://developers.moovitapp.com
       
-      NSMutableArray *params = [NSMutableArray arrayWithCapacity:4];
+      NSMutableArray *params = [NSMutableArray arrayWithCapacity:5];
       
       if (start && !.start.isCurrentLocation) {
           [params addObject:[NSString stringWithFormat:@"origin_lat=%f&origin_lon=%f", start.coordinate.latitude, start.coordinate.longitude]];

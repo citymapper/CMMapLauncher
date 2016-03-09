@@ -33,41 +33,42 @@
 
 import Foundation
 import MapKit
+import MobileCoreServices
 
 enum CMMapApp {
     
     /**
      Preinstalled Apple Maps
      */
-    case CMMapAppAppleMaps  // Preinstalled Apple Maps
+    case AppleMaps  // Preinstalled Apple Maps
     /**
      Citymapper
      */
-    case CMMapAppCitymapper
+    case Citymapper
     /**
      Standalone Google Maps App
      */
-    case CMMapAppGoogleMaps
+    case GoogleMaps
     /**
      Navigon
      */
-    case CMMapAppNavigon
+    case Navigon
     /**
      The Transit App
      */
-    case CMMapAppTheTransitApp
+    case TheTransitApp
     /**
      Moovit
      */
-    case CMMapAppMoovit
+    case Moovit
     /**
      Waze
      */
-    case CMMapAppWaze
+    case Waze
     /**
      Yandex Navigator
      */
-    case CMMapAppYandex
+    case Yandex
     
 }
 
@@ -82,18 +83,18 @@ class CMMapLauncher: NSObject {
      @return true if the specified app is installed, false otherwise.
      */
     
-    public static func isMapAppInstalled(mapApp: CMMapApp) -> Bool {
+    static func isMapAppInstalled(mapApp: CMMapApp) -> Bool {
         
-        if mapApp == CMMapAppAppleMaps {
+        if mapApp == .AppleMaps {
             return true
         }
         
         let urlPrefix = CMMapLauncher.urlPrefixForMapApp(mapApp)
-        if urlPrefix == nil {
+        guard let prefix = urlPrefix else {
             return false
         }
         
-        return UIApplication.sharedApplication().canOpenURL(NSURL(string:urlPrefix))
+        return UIApplication.sharedApplication().canOpenURL(NSURL(string:prefix)!)
         
     }
     
@@ -107,8 +108,8 @@ class CMMapLauncher: NSObject {
      @return true if the mapping app could be launched, false otherwise.
      */
     
-    public static func launchMapApp(mapApp: CMMapApp, forDirectionsTo end: CMMapPoint) -> Bool {
-        return CMMapLauncher.launchMapApp(mapApp, forDirectionsFrom: CMMapPoint.currentLocation, to:end)
+    static func launchMapApp(mapApp: CMMapApp, forDirectionsTo end: CMMapPoint) -> Bool {
+        return CMMapLauncher.launchMapApp(mapApp, forDirectionsFrom: CMMapPoint(currentLocation: true), to:end)
     }
     
     /**
@@ -122,13 +123,15 @@ class CMMapLauncher: NSObject {
      @return true if the mapping app could be launched, false otherwise.
      */
     
-    public static func launchMapApp(mapApp: CMMapApp, forDirectionsFrom start: CMMapPoint, to: CMMapPoint) -> Bool {
+    static func launchMapApp(mapApp: CMMapApp, forDirectionsFrom start: CMMapPoint, to end: CMMapPoint) -> Bool {
+        
+        var url = String()
         
         func launchCitymapper() {
             
-            let params = [String]()
+            var params = [String]()
             
-            if start != nil && !start.isCurrentLocation {
+            if !start.isCurrentLocation {
                 params.append("startcoord=\(start.coordinate.latitude),\(start.coordinate.longitude)")
                 if let startName = start.name {
                     params.append("startname=\(CMMapLauncher.urlEncode(startName))")
@@ -138,7 +141,7 @@ class CMMapLauncher: NSObject {
                 }
             }
             
-            if end != nil && !end.isCurrentLocation {
+            if !end.isCurrentLocation {
                 
                 params.append("endcoord=\(end.coordinate.latitude),\(end.coordinate.longitude)")
                 
@@ -146,7 +149,7 @@ class CMMapLauncher: NSObject {
                     params.append("endname=\(CMMapLauncher.urlEncode(endName))")
                 }
                 if let endAddress = end.address {
-                    params.append("endaddress=\(CMMapLauncher.urlEncode(end.address))")
+                    params.append("endaddress=\(CMMapLauncher.urlEncode(endAddress))")
                 }
             }
             
@@ -155,13 +158,13 @@ class CMMapLauncher: NSObject {
         }
         
         func launchTransitApp() {
-            let params = [String]()
+            var params = [String]()
             
-            if start != nil && !start.isCurrentLocation {
+            if !start.isCurrentLocation {
                 params.append("from=\(start.coordinate.latitude),\(start.coordinate.longitude)")
             }
             
-            if end != nil && !end.isCurrentLocation {
+            if !end.isCurrentLocation {
                 params.append("to=\(end.coordinate.latitude),\(end.coordinate.longitude)")
             }
             
@@ -171,17 +174,17 @@ class CMMapLauncher: NSObject {
         
         func launchMoovit() {
             
-            let params = [String]()
+            var params = [String]()
             
-            if start != nil && !start.isCurrentLocation {
+            if !start.isCurrentLocation {
                 params.append("origin_lat=\(start.coordinate.latitude)&origin_lon=\(start.coordinate.longitude)")
                 if let startName = start.name {
                     params.append("orig_name=\(CMMapLauncher.urlEncode(startName))")
                 }
             }
             
-            if end != nil && !end.isCurrentLocation {
-                params.append("dest_lat=\(start.coordinate.latitude)&dest_lon=\(start.coordinate.longitude)")
+            if !end.isCurrentLocation {
+                params.append("dest_lat=\(end.coordinate.latitude)&dest_lon=\(end.coordinate.longitude)")
                 if let endName = end.name {
                     params.append("dest_name=\(CMMapLauncher.urlEncode(endName))")
                 }
@@ -208,47 +211,42 @@ class CMMapLauncher: NSObject {
             return false
         }
         
-        var url = String {
-            didSet {
-                return UIApplication.sharedApplication().openURL(NSURL(string: url))
-            }
-        }
-        
-        if mapApp == CMMapAppAppleMaps {
+        if mapApp == .AppleMaps {
             
             if #available(iOS 6.0, *) {
                 let launchOptions = [MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving]
-                return MKMapItem.openMaps(items: [start.MKMapItem, end.MKMapItem], launchOptions: launchOptions)
+                return MKMapItem.openMapsWithItems([start.mapItem, end.mapItem], launchOptions: launchOptions)
             } else {
                 url = "http://maps.google.com/maps?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
             }
             
-        } else if mapApp == CMMapAppGoogleMaps {
+        } else if mapApp == .GoogleMaps {
             url = "comgooglemaps://?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
             
-        } else if mapApp == CMMapAppCitymapper {
+        } else if mapApp == .Citymapper {
             launchCitymapper()
             
-        } else if mapApp == CMMapAppTheTransitApp {
+        } else if mapApp == .TheTransitApp {
             // http://thetransitapp.com/developers
             launchTransitApp()
             
-        } else if (mapApp == CMMapAppMoovit) {
+        } else if (mapApp == .Moovit) {
             // http://developers.moovitapp.com
             launchMoovit()
             
-        } else if (mapApp == CMMapAppNavigon) {
+        } else if (mapApp == .Navigon) {
             // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
             launchNavigon()
             
-        } else if (mapApp == CMMapAppWaze) {
+        } else if (mapApp == .Waze) {
             url = "waze://?ll\(end.coordinate.latitude),\(end.coordinate.longitude)&navigate=yes"
             
-        } else if (mapApp == CMMapAppYandex) {
+        } else if (mapApp == .Yandex) {
             launchYandex()
             
         }
-        return false
+        
+        return UIApplication.sharedApplication().openURL(NSURL(string: url)!)
     }
     
     //MARK: - Utility
@@ -256,25 +254,25 @@ class CMMapLauncher: NSObject {
     private static func urlPrefixForMapApp(mapApp: CMMapApp) -> String? {
         
         switch mapApp {
-        case CMMapAppCitymapper:
+        case .Citymapper:
             return "citymapper://"
             
-        case CMMapAppGoogleMaps:
+        case .GoogleMaps:
             return "comgooglemaps://"
             
-        case CMMapAppNavigon:
+        case .Navigon:
             return "navigon://"
             
-        case CMMapAppTheTransitApp:
+        case .TheTransitApp:
             return "transit://"
             
-        case CMMapAppMoovit:
+        case .Moovit:
             return "moovit://"
             
-        case CMMapAppWaze:
+        case .Waze:
             return "waze://"
             
-        case CMMapAppYandex:
+        case .Yandex:
             return "yandexnavi://"
             
         default:
@@ -287,17 +285,13 @@ class CMMapLauncher: NSObject {
     private static func urlEncode(queryParam: String) -> String {
         // Encode all the reserved characters, per RFC 3986
         // (<http://www.ietf.org/rfc/rfc3986.txt>)
-        let newString = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, queryParam as! CFStringRef, nil, "!*'();:@&=+$,/?%#[]" as! CFStringRef, kCFStringEncodingUTF8);
-        guard let encodedString = newString else {
-            return String()
-        }
-        return encodedString
+        
+        let encodedString = (queryParam as NSString).stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet()) ?? ""
+        return encodedString as String ?? ""
+        
     }
     
     private static func googleMapsStringForMapPoint(mapPoint: CMMapPoint) -> String {
-        if mapPoint == nil {
-            return String()
-        }
         
         if mapPoint.isCurrentLocation && mapPoint.coordinate.latitude == 0.0 && mapPoint.coordinate.longitude == 0.0 {
             return String()
@@ -310,7 +304,7 @@ class CMMapLauncher: NSObject {
         
         return "\(mapPoint.coordinate.latitude), \(mapPoint.coordinate.longitude)"
     }
-
+    
 }
 
 ///--------------------------
@@ -322,12 +316,12 @@ class CMMapPoint : NSObject {
     /**
      Determines whether this map point represents the user's current location.
      */
-    var isCurrentLocation: Bool!
+    var isCurrentLocation = false
     
     /**
      The geographical coordinate of the map point.
      */
-    var coordinate: CLLocationCoordinate2D
+    var coordinate: CLLocationCoordinate2D!
     
     /**
      The user-visible name of the given map point (optional, may be nil).
@@ -335,11 +329,12 @@ class CMMapPoint : NSObject {
     var name: String? {
         get {
             let returnValue = self.isCurrentLocation ? "Current Location" : _name
+            return returnValue
         } set(newValue) {
             self._name = newValue
         }
     }
-
+    
     private var _name: String?
     
     /**
@@ -371,17 +366,16 @@ class CMMapPoint : NSObject {
      @param coordinate The geographical coordinate of the new map point.
      */
     
-    init(name: String?, address: String?, coordinate: CLLocationCoordinate2D, currentLocation: Bool) {
+    init(name: String?, address: String?, coordinate: CLLocationCoordinate2D) {
         self._name = name
         self.address = address
         self.coordinate = coordinate
-        self.isCurrentLocation = currentLocation
     }
     
     /**
      Convenience initializer that reflects user's current location
      */
-    convenience init(currentLocation: Bool) {
+    init(currentLocation: Bool) {
         self.isCurrentLocation = true
     }
     
@@ -392,14 +386,17 @@ extension Array {
     func stringFromComponentsJoinedBy(unionString: String) -> String {
         
         var string = ""
-        for element in self where element is StringInterpolationConvertible {
+        for element in self where String(element) != nil {
             
-            if (element == self.last!) == false {
+            let converted = String(element)
+            
+            if (converted == String(self.last!)) == false {
                 string += "\(element)\(unionString)"
-            } else if element == self.last! {
+            } else if converted == String(self.last!) {
                 string += "\(element)"
             }
         }
         return string
     }
 }
+
