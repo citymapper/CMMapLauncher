@@ -1,3 +1,4 @@
+//
 // CMMapLauncher.swift
 //
 // Copyright (c) 2013 Citymapper Ltd. All rights reserved.
@@ -27,7 +28,7 @@
 // applications to display directions.  Here's the simplest use case:
 //
 // let bigBen =  CLCLLocationCoordinate2DMake(51.500755, -0.124626)
-// CMMapLauncher.launchMapApp(CMMapAppAppleMaps, forDirectionsTo: CMMapPoint(name:@"Big Ben",coordinate:bigBen)
+// CMMapLauncher.launchMapApp(CMMapAppAppleMaps, forDirectionsTo: CMMapPoint(name:"Big Ben", address: nil, coordinate:bigBen)
 //
 
 import Foundation
@@ -37,241 +38,224 @@ enum CMMapApp {
     
     /**
      Preinstalled Apple Maps
-    */
+     */
     case CMMapAppAppleMaps  // Preinstalled Apple Maps
     /**
      Citymapper
-    */
+     */
     case CMMapAppCitymapper
     /**
-    Standalone Google Maps App
-    */
+     Standalone Google Maps App
+     */
     case CMMapAppGoogleMaps
     /**
-    Navigon
-    */           
-    case CMMapAppNavigon             
+     Navigon
+     */
+    case CMMapAppNavigon
     /**
-    The Transit App
-    */
-    case CMMapAppTheTransitApp       
+     The Transit App
+     */
+    case CMMapAppTheTransitApp
     /**
-    Moovit
-    */
-    case CMMapAppMoovit             
+     Moovit
+     */
+    case CMMapAppMoovit
     /**
-    Waze
-    */
-    case CMMapAppWaze                
+     Waze
+     */
+    case CMMapAppWaze
     /**
-    Yandex Navigator
-    */
+     Yandex Navigator
+     */
     case CMMapAppYandex
-       
-}
-
-extension Array {
-    
-    func stringFromComponentsJoinedBy(unionString: String) -> String {
-        
-        var string = ""
-        
-        for element in self where element is StringInterpolationConvertible {
-            
-            if (element == self.last!) == false {
-                string += "\(element)\(unionString)"
-            } else if element == self.last! {
-                string += "\(element)"
-            }
-            
-        }
-        
-        return string
-        
-    }
     
 }
 
 class CMMapLauncher: NSObject {
     
-    /**
-        Determines whether the given mapping app is installed.
- 
-        @param mapApp An enumeration value identifying a mapping application.
-        @return true if the specified app is installed, false otherwise.
-    */
-
-    public static func isMapAppInstalled:(mapApp: CMMapApp) -> Bool {
+    //MARK: - Public Library Methods
     
+    /**
+     Determines whether the given mapping app is installed.
+     
+     @param mapApp An enumeration value identifying a mapping application.
+     @return true if the specified app is installed, false otherwise.
+     */
+    
+    public static func isMapAppInstalled(mapApp: CMMapApp) -> Bool {
+        
         if mapApp == CMMapAppAppleMaps {
             return true
         }
-    
+        
         let urlPrefix = CMMapLauncher.urlPrefixForMapApp(mapApp)
         if urlPrefix == nil {
             return false
         }
-    
+        
         return UIApplication.sharedApplication().canOpenURL(NSURL(string:urlPrefix))
-
+        
     }
-
+    
     /**
-       Launches the specified mapping application with directions
-       from the user's current location to the specified endpoint.
- 
-      @param mapApp An enumeration value identifying a mapping application.
-      @param end The destination of the desired directions.
- 
-      @return true if the mapping app could be launched, false otherwise.
-    */
- 
+     Launches the specified mapping application with directions
+     from the user's current location to the specified endpoint.
+     
+     @param mapApp An enumeration value identifying a mapping application.
+     @param end The destination of the desired directions.
+     
+     @return true if the mapping app could be launched, false otherwise.
+     */
+    
     public static func launchMapApp(mapApp: CMMapApp, forDirectionsTo end: CMMapPoint) -> Bool {
-        return CMMapLauncher.launchMapApp(mapApp, forDirectionsFrom: CMMapPoint.currentLocation to:end)
+        return CMMapLauncher.launchMapApp(mapApp, forDirectionsFrom: CMMapPoint.currentLocation, to:end)
     }
-
+    
     /**
-        Launches the specified mapping application with directions
-        between the two specified endpoints.
- 
-        @param mapApp An enumeration value identifying a mapping application.
-        @param start The starting point of the desired directions.
-        @param end The destination of the desired directions.
- 
-        @return true if the mapping app could be launched, false otherwise.
-    */
- 
+     Launches the specified mapping application with directions
+     between the two specified endpoints.
+     
+     @param mapApp An enumeration value identifying a mapping application.
+     @param start The starting point of the desired directions.
+     @param end The destination of the desired directions.
+     
+     @return true if the mapping app could be launched, false otherwise.
+     */
+    
     public static func launchMapApp(mapApp: CMMapApp, forDirectionsFrom start: CMMapPoint, to: CMMapPoint) -> Bool {
-    
+        
         func launchCitymapper() {
-        let params = [String]()
-        
-        if start != nil && !start.isCurrentLocation {
-            params.append("startcoord=\(start.coordinate.latitude),\(start.coordinate.longitude)")
-            if let startName = start.name {
-                params.append("startname=\(CMMapLauncher.urlEncode(startName)")
+            
+            let params = [String]()
+            
+            if start != nil && !start.isCurrentLocation {
+                params.append("startcoord=\(start.coordinate.latitude),\(start.coordinate.longitude)")
+                if let startName = start.name {
+                    params.append("startname=\(CMMapLauncher.urlEncode(startName))")
+                }
+                if let startAddress = start.address {
+                    params.append("startaddress=\(CMMapLauncher.urlEncode(startAddress))")
+                }
             }
-            if let startAddress = start.address {
-                params.append("startaddress=\(CMMapLauncher.urlEncode(startAddress))")
+            
+            if end != nil && !end.isCurrentLocation {
+                
+                params.append("endcoord=\(end.coordinate.latitude),\(end.coordinate.longitude)")
+                
+                if let endName = end.name {
+                    params.append("endname=\(CMMapLauncher.urlEncode(endName))")
+                }
+                if let endAddress = end.address {
+                    params.append("endaddress=\(CMMapLauncher.urlEncode(end.address))")
+                }
             }
+            
+            url = "citymapper://directions?\(params.stringFromComponentsJoinedBy("&"))"
+            
         }
         
-        if end != nil && !end.isCurrentLocation {
-            
-            params.append("endcoord=\(end.coordinate.latitude),\(end.coordinate.longitude)")
-            
-            if let endName = end.name {
-                params.append("endname=\(CMMapLauncher.urlEncode\(endName))")
-            }
-            if let endAddress = end.address {
-                params.append("endaddress=\(CMMapLauncher.urlEncode(end.address))")
-            }
-        }
-        
-        url = "citymapper://directions?\(params.stringFromComponentsJoinedBy("&"))"
-
-    }
-    
         func launchTransitApp() {
-      let params = [String]()
+            let params = [String]()
             
-      if start != nil && !start.isCurrentLocation {
-        params.append("from=\(start.coordinate.latitude),\(start.coordinate.longitude)")
-      }
+            if start != nil && !start.isCurrentLocation {
+                params.append("from=\(start.coordinate.latitude),\(start.coordinate.longitude)")
+            }
             
-      if end != nil && !end.isCurrentLocation {
-        params.append("to=\(end.coordinate.latitude),\(end.coordinate.longitude)")
-      }
+            if end != nil && !end.isCurrentLocation {
+                params.append("to=\(end.coordinate.latitude),\(end.coordinate.longitude)")
+            }
             
-      url = "transit://directions?\(params.stringFromComponentsJoinedBy("&"))"
+            url = "transit://directions?\(params.stringFromComponentsJoinedBy("&"))"
             
-    }
-
+        }
+        
         func launchMoovit() {
-          
-       let params = [String]()
-          
-       if start != nil && !start.isCurrentLocation {
-           params.append("origin_lat=\(start.coordinate.latitude)&origin_lon=\(start.coordinate.longitude)")
-           if let startName = start.name {
-               params.append("orig_name=\(CMMapLauncher.urlEncode(startName))")
-           }
-       }
-          
-       if end != nil && !end.isCurrentLocation {
-           params.append("dest_lat=\(start.coordinate.latitude)&dest_lon=\(start.coordinate.longitude)")
-           if let endName = end.name {
-               params.append("dest_name=\(CMMapLauncher.urlEncode(endName))")
-           }
-       }
-
-       url = "moovit://directions?\(params.stringFromComponentsJoinedBy("&"))"
-          
-    }
+            
+            let params = [String]()
+            
+            if start != nil && !start.isCurrentLocation {
+                params.append("origin_lat=\(start.coordinate.latitude)&origin_lon=\(start.coordinate.longitude)")
+                if let startName = start.name {
+                    params.append("orig_name=\(CMMapLauncher.urlEncode(startName))")
+                }
+            }
+            
+            if end != nil && !end.isCurrentLocation {
+                params.append("dest_lat=\(start.coordinate.latitude)&dest_lon=\(start.coordinate.longitude)")
+                if let endName = end.name {
+                    params.append("dest_name=\(CMMapLauncher.urlEncode(endName))")
+                }
+            }
+            
+            url = "moovit://directions?\(params.stringFromComponentsJoinedBy("&"))"
+            
+        }
         
         func launchNavigon() {
-        let name = end.name != nil ? end.name : "Destination"
-        url = "navigon://coordinate/\(name)/\(end.coordinate.latitude)/\(end.coordinate.longitude)"
-    }
-    
-        func launchYandex() {
-        var tempUrl = "yandexnavi://build_route_on_map?lat_to=\(end.coordinate.latitude)&lon_to=\(end.coordinate.longitude)"
-        if !start.isCurrentLocation {
-            tempUrl += "&lat_from=\(start.coordinate.latitude)&lon_from=%\(start.coordinate.longitude)"
+            let name = end.name != nil ? end.name : "Destination"
+            url = "navigon://coordinate/\(name)/\(end.coordinate.latitude)/\(end.coordinate.longitude)"
         }
-        url = tempUrl
-    }
-    
+        
+        func launchYandex() {
+            var tempUrl = "yandexnavi://build_route_on_map?lat_to=\(end.coordinate.latitude)&lon_to=\(end.coordinate.longitude)"
+            if !start.isCurrentLocation {
+                tempUrl += "&lat_from=\(start.coordinate.latitude)&lon_from=%\(start.coordinate.longitude)"
+            }
+            url = tempUrl
+        }
+        
         guard CMMapLauncher.isMapAppInstalled(mapApp) == true else {
             return false
         }
-    
+        
         var url = String {
-        didSet {
-            return UIApplication.sharedApplication().openURL(NSURL(string: url))
+            didSet {
+                return UIApplication.sharedApplication().openURL(NSURL(string: url))
+            }
         }
+        
+        if mapApp == CMMapAppAppleMaps {
+            
+            if #available(iOS 6.0, *) {
+                let launchOptions = [MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving]
+                return MKMapItem.openMaps(items: [start.MKMapItem, end.MKMapItem], launchOptions: launchOptions)
+            } else {
+                url = "http://maps.google.com/maps?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
+            }
+            
+        } else if mapApp == CMMapAppGoogleMaps {
+            url = "comgooglemaps://?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
+            
+        } else if mapApp == CMMapAppCitymapper {
+            launchCitymapper()
+            
+        } else if mapApp == CMMapAppTheTransitApp {
+            // http://thetransitapp.com/developers
+            launchTransitApp()
+            
+        } else if (mapApp == CMMapAppMoovit) {
+            // http://developers.moovitapp.com
+            launchMoovit()
+            
+        } else if (mapApp == CMMapAppNavigon) {
+            // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
+            launchNavigon()
+            
+        } else if (mapApp == CMMapAppWaze) {
+            url = "waze://?ll\(end.coordinate.latitude),\(end.coordinate.longitude)&navigate=yes"
+            
+        } else if (mapApp == CMMapAppYandex) {
+            launchYandex()
+            
+        }
+        return false
     }
     
-    if mapApp == CMMapAppAppleMaps {
+    //MARK: - Utility
+    
+    private static func urlPrefixForMapApp(mapApp: CMMapApp) -> String? {
         
-        if #available(iOS 6.0, *) {
-            let launchOptions = [MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving]
-            return MKMapItem.openMaps(items: [start.MKMapItem, end.MKMapItem], launchOptions: launchOptions)
-        } else {
-            url = "http://maps.google.com/maps?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
-        }
-        
-    } else if mapApp == CMMapAppGoogleMaps {
-        url = "comgooglemaps://?saddr=\(CMMapLauncher.googleMapsStringForMapPoint(start))&daddr=\(CMMapLauncher.googleMapsStringForMapPoint(end))"
-        
-    } else if mapApp == CMMapAppCitymapper {
-        launchCitymapper()
-        
-    } else if mapApp == CMMapAppTheTransitApp {
-        // http://thetransitapp.com/developers
-        launchTransitApp()
-        
-    } else if (mapApp == CMMapAppMoovit) {
-        // http://developers.moovitapp.com
-        launchMoovit()    
-        
-    } else if (mapApp == CMMapAppNavigon) {
-        // http://www.navigon.com/portal/common/faq/files/NAVIGON_AppInteract.pdf
-        launchNavigon()      
-        
-    } else if (mapApp == CMMapAppWaze) {
-        url = "waze://?ll\(end.coordinate.latitude),\(end.coordinate.longitude)&navigate=yes"
-        
-    } else if (mapApp == CMMapAppYandex) {
-        launchYandex()
-        
-    }
-    return false
-    }
-
-private static func urlPrefixForMapApp(mapApp: CMMapApp) -> String? {
-
-    switch mapApp {
+        switch mapApp {
         case CMMapAppCitymapper:
             return "citymapper://"
             
@@ -283,10 +267,10 @@ private static func urlPrefixForMapApp(mapApp: CMMapApp) -> String? {
             
         case CMMapAppTheTransitApp:
             return "transit://"
-        
+            
         case CMMapAppMoovit:
             return "moovit://"
-        
+            
         case CMMapAppWaze:
             return "waze://"
             
@@ -295,37 +279,38 @@ private static func urlPrefixForMapApp(mapApp: CMMapApp) -> String? {
             
         default:
             return nil;
-    }
-
-
-}
-
-private static func urlEncode(queryParam: String) -> String {
-    // Encode all the reserved characters, per RFC 3986
-    // (<http://www.ietf.org/rfc/rfc3986.txt>)
-    let newString = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, queryParam as! CFStringRef, nil, "!*'();:@&=+$,/?%#[]" as! CFStringRef, kCFStringEncodingUTF8);
-    guard let encodedString = newString else {
-        return String()
-    } 
-    return encodedString
-}
-
-private static func googleMapsStringForMapPoint(mapPoint: CMMapPoint) -> String {
-    if mapPoint == nil {
-        return String()
+        }
+        
+        
     }
     
-    if mapPoint.isCurrentLocation && mapPoint.coordinate.latitude == 0.0 && mapPoint.coordinate.longitude == 0.0 {
-        return String()
+    private static func urlEncode(queryParam: String) -> String {
+        // Encode all the reserved characters, per RFC 3986
+        // (<http://www.ietf.org/rfc/rfc3986.txt>)
+        let newString = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, queryParam as! CFStringRef, nil, "!*'();:@&=+$,/?%#[]" as! CFStringRef, kCFStringEncodingUTF8);
+        guard let encodedString = newString else {
+            return String()
+        }
+        return encodedString
     }
     
-    if let mapPointName = mapPoint.name {
-        let mapPointString = "\(mapPoint.coordinate.latitude),\(mapPoint.coordinate.longitude)+\(CMMapLauncher.urlEncode(mapPointName))"
-        return mapPointString
+    private static func googleMapsStringForMapPoint(mapPoint: CMMapPoint) -> String {
+        if mapPoint == nil {
+            return String()
+        }
+        
+        if mapPoint.isCurrentLocation && mapPoint.coordinate.latitude == 0.0 && mapPoint.coordinate.longitude == 0.0 {
+            return String()
+        }
+        
+        if let mapPointName = mapPoint.name {
+            let mapPointString = "\(mapPoint.coordinate.latitude),\(mapPoint.coordinate.longitude)+\(CMMapLauncher.urlEncode(mapPointName))"
+            return mapPointString
+        }
+        
+        return "\(mapPoint.coordinate.latitude), \(mapPoint.coordinate.longitude)"
     }
-    
-    return "\(mapPoint.coordinate.latitude), \(mapPoint.coordinate.longitude)"
-}
+
 }
 
 ///--------------------------
@@ -335,33 +320,36 @@ private static func googleMapsStringForMapPoint(mapPoint: CMMapPoint) -> String 
 class CMMapPoint : NSObject {
     
     /**
-        Determines whether this map point represents the user's current location.
-    */
+     Determines whether this map point represents the user's current location.
+     */
     var isCurrentLocation: Bool!
+    
     /**
-        The geographical coordinate of the map point.
-    */
+     The geographical coordinate of the map point.
+     */
     var coordinate: CLLocationCoordinate2D
+    
     /**
-        The user-visible name of the given map point (optional, may be nil).
-    */
-    
-    private var _name: String!
-    
-    var name: String! {
+     The user-visible name of the given map point (optional, may be nil).
+     */
+    var name: String? {
         get {
             let returnValue = self.isCurrentLocation ? "Current Location" : _name
         } set(newValue) {
             self._name = newValue
         }
     }
+
+    private var _name: String?
+    
     /**
-        The address of the given map point (optional, may be nil).
-    */
+     The address of the given map point (optional, may be nil).
+     */
     var address: String!
+    
     /**
-        Gives an MKMapItem corresponding to this map point object.
-    */
+     Gives an MKMapItem corresponding to this map point object.
+     */
     var mapItem: MKMapItem {
         get {
             if self.isCurrentLocation {
@@ -374,29 +362,44 @@ class CMMapPoint : NSObject {
             }
         }
     }
-
+    
     /**
-        Creates a new CMMapPoint that signifies the current location.
-    */
-    var currentLocation: CMMapPoint {
-        let mapPoint = CMMapPoint()
-        mapPoint.isCurrentLocation = true
-        return mapPoint
-    }
-
-    /**
-        Creates a new CMMapPoint with the given name, address, and coordinate.
- 
-        @param name The optional user-visible name of the new map point.
-        @param address The optional address string of the new map point.
-        @param coordinate The geographical coordinate of the new map point.
-    */
-    init(name: String?, address: String?, coordinate: CLLocationCoordinate2D) {
+     Creates a new CMMapPoint with the given name, address, and coordinate.
+     
+     @param name The optional user-visible name of the new map point.
+     @param address The optional address string of the new map point.
+     @param coordinate The geographical coordinate of the new map point.
+     */
+    
+    init(name: String?, address: String?, coordinate: CLLocationCoordinate2D, currentLocation: Bool) {
         self._name = name
         self.address = address
         self.coordinate = coordinate
-        self.isCurrentLocation = false
+        self.isCurrentLocation = currentLocation
     }
-
+    
+    /**
+     Convenience initializer that reflects user's current location
+     */
+    convenience init(currentLocation: Bool) {
+        self.isCurrentLocation = true
+    }
+    
 }
 
+extension Array {
+    
+    func stringFromComponentsJoinedBy(unionString: String) -> String {
+        
+        var string = ""
+        for element in self where element is StringInterpolationConvertible {
+            
+            if (element == self.last!) == false {
+                string += "\(element)\(unionString)"
+            } else if element == self.last! {
+                string += "\(element)"
+            }
+        }
+        return string
+    }
+}
