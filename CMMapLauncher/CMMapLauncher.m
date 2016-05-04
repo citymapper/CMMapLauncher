@@ -105,6 +105,13 @@
 + (BOOL)launchMapApp:(CMMapApp)mapApp
    forDirectionsFrom:(CMMapPoint *)start
                   to:(CMMapPoint *)end {
+    [self launchMapApp:mapApp forDirectionsFrom:start to:end referrer:nil];
+}
+
++ (BOOL)launchMapApp:(CMMapApp)mapApp
+   forDirectionsFrom:(CMMapPoint *)start
+                  to:(CMMapPoint *)end
+            referrer:(NSString *)referrer {
     if (![CMMapLauncher isMapAppInstalled:mapApp]) {
         return NO;
     }
@@ -147,6 +154,9 @@
             if (end.address) {
                 [params addObject:[NSString stringWithFormat:@"endaddress=%@", [CMMapLauncher urlEncode:end.address]]];
             }
+        }
+        if (referrer) {
+            [params addObject:[NSString stringWithFormat:@"referrer=%@", [CMMapLauncher urlEncode:referrer]]];
         }
         NSString *url = [NSString stringWithFormat:@"citymapper://directions?%@", [params componentsJoinedByString:@"&"]];
         return [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];

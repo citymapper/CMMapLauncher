@@ -90,6 +90,22 @@ typedef NS_ENUM(NSUInteger, CMMapApp) {
    forDirectionsFrom:(CMMapPoint *)start
                   to:(CMMapPoint *)end;
 
+/**
+ Launches the specified mapping application with directions
+ between the two specified endpoints sending your referrer identifier.
+ 
+ @param mapApp An enumeration value identifying a mapping application.
+ @param start The starting point of the desired directions.
+ @param end The destination of the desired directions.
+ @param referrer Your referrer identifier.
+ 
+ @return YES if the mapping app could be launched, NO otherwise.
+ */
++ (BOOL)launchMapApp:(CMMapApp)mapApp
+   forDirectionsFrom:(CMMapPoint *)start
+                  to:(CMMapPoint *)end
+            referrer:(NSString *)referrer;
+
 @end
 
 
